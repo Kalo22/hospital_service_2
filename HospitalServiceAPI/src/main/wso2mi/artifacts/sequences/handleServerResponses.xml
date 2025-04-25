@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="handleServerResponses" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+    <!-- Log the HTTP response status -->
+    <log level="full">
+        <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_STATUS"/>
+        <property expression="json-eval($)" name="Payload"/>
+    </log>
+    <!-- Check for 4xx/5xx Errors -->
+    <filter regex="^(4|5)[0-9]{2}$" source="get-property('axis2', 'HTTP_SC')">
+        <then>
+            <property expression="get-property('axis2', 'HTTP_SC')" name="HTTP_SC" scope="axis2" type="STRING"/>
+            <property name="NO_ENTITY_BODY" scope="axis2" type="STRING" value="false"/>
+            <send/>
+        </then>
+        <else>
+            <log level="full">
+                <property expression="json-eval($)" name="CapturedPayload"/>
+            </log>
+            <!-- Construct Custom Response -->
+            <payloadFactory media-type="json">
+                <format>
+                    {
+                        "message": "Your request was processed successfully.",
+                        "backendPayload": $1
+                    }
+                </format>
+                <args>
+                    <arg evaluator="json" expression="$"/>
+                </args>
+            </payloadFactory>
+            <!-- Send the Response -->
+            <send/>
+        </else>
+    </filter>
+</sequence>

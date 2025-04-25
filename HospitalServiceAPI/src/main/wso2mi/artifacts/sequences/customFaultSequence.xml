@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="CustomFaultSequence" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+    <log level="full">
+        <property expression="get-property('ERROR_CODE')" name="ERROR_CODE"/>
+        <property expression="get-property('ERROR_MESSAGE')" name="ERROR_MESSAGE"/>
+    </log>
+    <filter regex="401" source="get-property('ERROR_CODE')">
+        <then>
+            <property name="HTTP_SC" scope="axis2" type="STRING" value="401"/>
+            <payloadFactory media-type="json">
+                <format>
+                    {
+                        "error": "Unauthorized",
+                        "message": "You are not authorized to access this resource. Please check your credentials."
+                    }
+                </format>
+                <args/>
+                <!-- TODO: Add the error code via an argument property -->
+            </payloadFactory>
+            <respond/>
+        </then>
+        <else/>
+    </filter>
+    <filter regex="404" source="get-property('ERROR_CODE')">
+        <then>
+            <property name="HTTP_SC" scope="axis2" type="STRING" value="404"/>
+            <payloadFactory media-type="json">
+                <format>
+                    {
+                        "error": "Not Found",
+                        "message": "The requested resource could not be found. ERR CODE: $1"
+                    }
+                </format>
+                <args>
+                    <arg evaluator="xml" expression="get-property('ERROR_CODE')"/>
+                </args>
+            </payloadFactory>
+            <respond/>
+        </then>
+        <else/>
+    </filter>
+    <filter regex="500" source="get-property('ERROR_CODE')">
+        <then>
+            <property name="HTTP_SC" scope="axis2" type="STRING" value="500"/>
+            <payloadFactory media-type="json">
+                <format>
+                    {
+                        "error": "Internal Server Error",
+                        "message": "An unexpected error occurred on the server."
+                    }
+                </format>
+                <args/>
+                <!-- TODO: Add the error code via an argument property -->
+            </payloadFactory>
+            <respond/>
+        </then>
+        <else/>
+    </filter>
+    <!-- Default case -->
+    <property name="HTTP_SC" scope="axis2" type="STRING" value="400"/>
+    <payloadFactory media-type="json">
+        <format>
+            {
+                "error": "Unknown Error",
+                "message": "An unexpected error occurred."
+            }
+        </format>
+        <args/>
+        <!-- TODO: Add the error code via an argument property -->
+    </payloadFactory>
+    <respond/>
+</sequence>

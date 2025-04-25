@@ -1,0 +1,23 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "medicineCode": {
+            "type": "string",
+            "minLength": 1
+        },
+        "amount": {
+            "type": "integer",
+            "minimum": 1
+        },
+        "date": {
+            "type": "string",
+            "pattern": "^\\d{2}/\\d{2}/\\d{4}$"
+        },
+        "doctorId": {
+            "type": "string",
+            "minLength": 1
+        }
+    },
+    "required": ["medicineCode", "amount", "date", "doctorId"]
+}

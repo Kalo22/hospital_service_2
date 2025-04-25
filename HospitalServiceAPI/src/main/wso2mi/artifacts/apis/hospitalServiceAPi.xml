@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<api context="/hospitalserviceapi" name="hospitalServiceAPi" xmlns="http://ws.apache.org/ns/synapse">
+
+	<!-- POST resource to add a patient -->
+    <resource methods="POST" uri-template="/addPatient">
+        <inSequence>
+            <!-- Remove the /addPatient postfix -->
+            <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
+            <!-- Ensure the message is in JSON format -->
+            <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+            <!-- Adds an Authorization header -->
+            <property expression="fn:concat('Basic ', wso2:vault-lookup('backend_credentials'))" name="Authorization" scope="transport" type="STRING"/>
+            <!-- Validate incoming JSON payload -->
+            <validate cache-schema="true">
+                <schema key="gov:custom/patient-schema.json"/>
+                <on-fail>
+                    <payloadFactory media-type="json">
+                        <format>
+                            {
+                                "error": "Invalid payload. Please provide valid name, dateOfBirth, and email."
+                            }
+                        </format>
+                        <args/>
+                    </payloadFactory>
+                    <respond/>
+                </on-fail>
+            </validate>
+            <!-- Directly pass the validated payload to the backend -->
+            <send>
+                <endpoint key="addPatientEP"/>
+            </send>
+        </inSequence>
+        <outSequence>
+            <!-- Send a response back to the client corresponding to the code of the server response-->
+            <sequence key="handleServerResponses"/>
+        </outSequence>
+        <faultSequence>
+            <sequence key="customFaultSequence"/>
+        </faultSequence>
+    </resource>
+    
+    <!-- GET resource to get a patient -->
+    <resource methods="GET" uri-template="/patient/{patient_id}">
+        <inSequence>
+            <!-- Remove the URI postfix -->
+            <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
+            <!-- Add Authorization Header -->
+            <property expression="fn:concat('Basic ', wso2:vault-lookup('backend_credentials'))" name="Authorization" scope="transport" type="STRING"/>
+            <!-- Set message type -->
+            <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+            <!-- Store patient_id -->
+            <property expression="get-property('uri.var.patient_id')" name="uri.var.patient_id" scope="default" type="STRING"/>
+            <!-- Send to backend -->
+            <send>
+                <endpoint>
+                    <http method="get" uri-template="http://localhost:9090/patient/{uri.var.patient_id}">
+                        <timeout>
+                            <duration>60000</duration>
+                        </timeout>
+                        <suspendOnFailure>
+                            <initialDuration>-1</initialDuration>
+                            <progressionFactor>1</progressionFactor>
+                        </suspendOnFailure>
+                        <markForSuspension>
+                            <retriesBeforeSuspension>0</retriesBeforeSuspension>
+                        </markForSuspension>
+                    </http>
+                </endpoint>
+            </send>
+        </inSequence>
+        <outSequence>
+            <!-- Send a response back to the client corresponding to the code of the server response-->
+            <sequence key="handleServerResponses"/>
+        </outSequence>
+        <faultSequence>
+            <sequence key="customFaultSequence"/>
+        </faultSequence>
+    </resource>
+    
+    <!-- DELETE resource to remove a patient -->
+    <resource methods="DELETE" uri-template="/patient/{patient_id}">
+        <inSequence>
+            <!-- Remove the URI postfix -->
+            <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
+            <!-- Add Authorization Header -->
+            <property expression="fn:concat('Basic ', wso2:vault-lookup('backend_credentials'))" name="Authorization" scope="transport" type="STRING"/>
+            <!-- Send to backend ISSUE: throws an error when used as a named endpoint-->
+            <send>
+                <endpoint>
+                    <http method="delete" uri-template="http://localhost:9090/patient/{uri.var.patient_id}">
+                        <timeout>
+                            <duration>60000</duration>
+                        </timeout>
+                        <suspendOnFailure>
+                            <initialDuration>-1</initialDuration>
+                            <progressionFactor>1</progressionFactor>
+                        </suspendOnFailure>
+                        <markForSuspension>
+                            <retriesBeforeSuspension>0</retriesBeforeSuspension>
+                        </markForSuspension>
+                    </http>
+                </endpoint>
+            </send>
+        </inSequence>
+        <outSequence>
+            <!-- Send a response back to the client corresponding to the code of the server response-->
+            <sequence key="handleServerResponses"/>
+        </outSequence>
+        <faultSequence>
+            <sequence key="customFaultSequence"/>
+        </faultSequence>
+    </resource>
+
+	<!-- POST resource to add a medical record -->
+    <resource methods="POST" uri-template="/patient/{patient_id}/history">
+        <inSequence>
+            <!-- Remove the URI postfix -->
+            <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
+            <!-- Add Authorization Header -->
+            <property expression="fn:concat('Basic ', wso2:vault-lookup('backend_credentials'))" name="Authorization" scope="transport" type="STRING"/>
+            <!-- Send to backend ISSUE: throws an error when used as a named endpoint-->
+            
+            <!-- Validate incoming JSON payload -->
+            <validate cache-schema="true">
+                <schema key="gov:custom/medicine-schema.json"/>
+                <on-fail>
+                    <payloadFactory media-type="json">
+                        <format>
+                            {
+                                "error": "Invalid payload. Please provide valid name, dateOfBirth, and email."
+                            }
+                        </format>
+                        <args/>
+                    </payloadFactory>
+                    <respond/>
+                </on-fail>
+            </validate>
+            
+            <send>
+                <endpoint>
+                    <http method="post" uri-template="http://localhost:9090/patient/{uri.var.patient_id}/history">
+                        <timeout>
+                            <duration>60000</duration>
+                        </timeout>
+                        <suspendOnFailure>
+                            <initialDuration>-1</initialDuration>
+                            <progressionFactor>1</progressionFactor>
+                        </suspendOnFailure>
+                        <markForSuspension>
+                            <retriesBeforeSuspension>0</retriesBeforeSuspension>
+                        </markForSuspension>
+                    </http>
+                </endpoint>
+            </send>
+        </inSequence>
+        <outSequence>
+            <!-- Send a response back to the client corresponding to the code of the server response-->
+            <sequence key="handleServerResponses"/>
+        </outSequence>
+        <faultSequence>
+            <sequence key="customFaultSequence"/>
+        </faultSequence>
+    </resource>
+    
+    <!-- DELETE resource to remove a medical record -->
+    <resource methods="DELETE" uri-template="/patient/{patient_id}/history/{medical_record_id}">
+        <inSequence>
+            <!-- Remove the URI postfix -->
+            <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
+            <!-- Add Authorization Header -->
+            <property expression="fn:concat('Basic ', wso2:vault-lookup('backend_credentials'))" name="Authorization" scope="transport" type="STRING"/>
+            <!-- Send to backend ISSUE: throws an error when used as a named endpoint-->
+            <send>
+                <endpoint>
+                    <http method="delete" uri-template="http://localhost:9090/patient/{uri.var.patient_id}/history/{uri.var.medical_record_id}">
+                        <timeout>
+                            <duration>60000</duration>
+                        </timeout>
+                        <suspendOnFailure>
+                            <initialDuration>-1</initialDuration>
+                            <progressionFactor>1</progressionFactor>
+                        </suspendOnFailure>
+                        <markForSuspension>
+                            <retriesBeforeSuspension>0</retriesBeforeSuspension>
+                        </markForSuspension>
+                    </http>
+                </endpoint>
+            </send>
+        </inSequence>
+        <outSequence>
+            <!-- Send a response back to the client corresponding to the code of the server response-->
+            <sequence key="handleServerResponses"/>
+        </outSequence>
+        <faultSequence>
+            <sequence key="customFaultSequence"/>
+        </faultSequence>
+    </resource>
+    
+    
+    <!--TODO: Impement the other resources-->
+    <!--TODO: use named endpoints for the resources-->>
+</api>
